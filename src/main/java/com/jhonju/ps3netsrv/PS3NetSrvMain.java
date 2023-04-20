@@ -1,16 +1,33 @@
 package com.jhonju.ps3netsrv;
 
-import androidx.annotation.NonNull;
-
 import com.jhonju.ps3netsrv.server.PS3NetSrvTask;
+import com.jhonju.ps3netsrv.server.enums.EListType;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PS3NetSrvMain {
     private static PS3NetSrvTask server;
 
     public static void main(String[] args) throws Exception {
         int port = 38008;
+        int maxConnections = 0;
+        boolean readOnly = false;
+        EListType listType = EListType.LIST_TYPE_NONE;
+        Set<String> filterAddresses = new HashSet<>();
         String folderPath;
+
         switch (args.length) {
+            case 6:
+                filterAddresses.addAll(Arrays.asList(args[5].split(";")));
+            case 5:
+                char argListType = args[4].toCharArray()[1];
+                listType = argListType == 'A' ? EListType.LIST_TYPE_ALLOWED : argListType == 'B' ? EListType.LIST_TYPE_BLOCKED : EListType.LIST_TYPE_NONE;
+            case 4:
+                readOnly = Byte.parseByte(args[3]) != 0;
+            case 3:
+                maxConnections = Integer.parseInt(args[2]);
             case 2:
                 port = Integer.parseInt(args[1]);
             case 1:
@@ -22,9 +39,10 @@ public class PS3NetSrvMain {
         }
         System.out.println("Server is running at " + port);
         System.out.println("Server is running at " + folderPath);
-        server = new PS3NetSrvTask(port, folderPath, new Thread.UncaughtExceptionHandler() {
+
+        server = new PS3NetSrvTask(port, folderPath, maxConnections, readOnly, filterAddresses, listType, new Thread.UncaughtExceptionHandler() {
             @Override
-            public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
+            public void uncaughtException(Thread thread, Throwable throwable) {
                 System.err.println(thread.getId() + " " + throwable.getMessage());
             }
         });
