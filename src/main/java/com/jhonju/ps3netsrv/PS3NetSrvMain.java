@@ -10,6 +10,7 @@ import java.util.Set;
 public class PS3NetSrvMain {
 
     public static void main(String[] args) {
+        System.out.println("ps3netsrv-java version 0.4 Alpha");
         int port = 38008;
         int maxConnections = 0;
         boolean readOnly = false;
