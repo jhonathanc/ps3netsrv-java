@@ -6,6 +6,8 @@ group 'com.jhonju'
 version '1.0-SNAPSHOT'
 
 jar {
+    archiveName = 'ps3netsrv.jar'
+    destinationDirectory.set(file("$buildDir/libs"))
     manifest {
         attributes 'Main-Class': 'com.jhonju.ps3netsrv.PS3NetSrvMain'
     }
