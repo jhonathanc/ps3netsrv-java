@@ -8,9 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PS3NetSrvMain {
-    private static PS3NetSrvTask server;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         int port = 38008;
         int maxConnections = 0;
         boolean readOnly = false;
@@ -40,12 +39,7 @@ public class PS3NetSrvMain {
         System.out.println("Server is running at " + port);
         System.out.println("Server is running at " + folderPath);
 
-        server = new PS3NetSrvTask(port, folderPath, maxConnections, readOnly, filterAddresses, listType, new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable throwable) {
-                System.err.println(thread.getId() + " " + throwable.getMessage());
-            }
-        });
+        PS3NetSrvTask server = new PS3NetSrvTask(port, folderPath, maxConnections, readOnly, filterAddresses, listType, (thread, throwable) -> System.err.println(thread.getId() + " " + throwable.getMessage()));
 
         server.run();
         System.out.println("Server end");
