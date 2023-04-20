@@ -37,5 +37,5 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: my-app
+        name: ps3netsrv
         path: build/libs/ps3netsrv.jar
