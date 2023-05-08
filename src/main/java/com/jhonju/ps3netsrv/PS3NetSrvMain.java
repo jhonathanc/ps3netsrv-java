@@ -22,13 +22,13 @@ public class PS3NetSrvMain {
         options.put("-T", "NONE");
 
         for (int i = 0; i < args.length; i += 2) {
-            if (i + 1 >= args.length) {
-                System.err.println("Invalid option: " + args[i]);
-                System.exit(1);
-            }
             if (args[i].equals("-H")) {
                 printHelp();
                 System.exit(0);
+            }
+            if (i + 1 >= args.length) {
+                System.err.println("Invalid option: " + args[i]);
+                System.exit(1);
             }
             options.put(args[i], args[i + 1]);
         }
@@ -53,7 +53,7 @@ public class PS3NetSrvMain {
     }
 
     private static void printHelp() {
-        System.out.println("Usage: minhaAplicacao [OPTIONS]");
+        System.out.println("Usage: ps3netsrv [OPTIONS]");
         System.out.println("Options:");
         System.out.println("  -F <path>      Folder path (default: current directory)");
         System.out.println("  -I <address>   Filter address (separate multiple ips with comma)");
