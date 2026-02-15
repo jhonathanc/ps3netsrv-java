@@ -3,11 +3,13 @@ package com.jhonju.ps3netsrv.server.commands;
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
 import com.jhonju.ps3netsrv.server.utils.Utils;
+import com.jhonju.ps3netsrv.server.io.IFile;
+import com.jhonju.ps3netsrv.server.commands.ReadDirCommand.ReadDirEntry;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class ReadDirEntryCommandV2 extends AbstractCommand {
 
@@ -38,7 +40,8 @@ public class ReadDirEntryCommandV2 extends AbstractCommand {
             this.gFileName = null;
         }
 
-        public ReadDirEntryResultV2(long aFileSize, long bModifiedTime, long cCreationTime, long dAccessedTime, short eFileNameLength, boolean fIsDirectory, String gFileName) {
+        public ReadDirEntryResultV2(long aFileSize, long bModifiedTime, long cCreationTime, long dAccessedTime,
+                short eFileNameLength, boolean fIsDirectory, String gFileName) {
             this.aFileSize = aFileSize;
             this.bModifiedTime = bModifiedTime;
             this.cCreationTime = cCreationTime;
@@ -66,36 +69,20 @@ public class ReadDirEntryCommandV2 extends AbstractCommand {
 
     @Override
     public void executeTask() throws IOException, PS3NetSrvException {
-        File file = ctx.getFile();
-        if (file == null || !file.isDirectory()) {
+        List<ReadDirEntry> entries = ctx.getDirectoryEntries();
+        if (entries == null || entries.isEmpty()) {
             send(new ReadDirEntryResultV2());
             return;
         }
-        File fileAux = null;
-        String[] fileList = file.list();
-        if (fileList != null) {
-            for (String fileName : fileList) {
-                fileAux = new File(file.getCanonicalPath() + "/" + fileName);
-                if (fileAux.getName().length() <= MAX_FILE_NAME_LENGTH) {
-                    break;
-                }
-            }
-        }
-        if (fileAux == null) {
-            ctx.setFile(null);
-            send(new ReadDirEntryResultV2());
-            return;
-        }
-        long[] fileTimes = Utils.getFileStats(fileAux);
 
+        ReadDirEntry entry = entries.remove(0);
         send(new ReadDirEntryResultV2(
-                fileAux.isDirectory() ? EMPTY_SIZE : file.length()
-                , fileAux.lastModified() / MILLISECONDS_IN_SECOND
-                , fileTimes[0] / MILLISECONDS_IN_SECOND
-                , fileTimes[1] / MILLISECONDS_IN_SECOND
-                , (short) fileAux.getName().length()
-                , fileAux.isDirectory()
-                , fileAux.getName())
-        );
+                entry.aFileSize,
+                entry.bModifiedTime,
+                entry.bModifiedTime, // Creation time not always available for all IFiles, using modified as fallback
+                entry.bModifiedTime, // Accessed time not always available for all IFiles, using modified as fallback
+                (short) entry.dFileName.length(),
+                entry.cIsDirectory,
+                entry.dFileName));
     }
 }

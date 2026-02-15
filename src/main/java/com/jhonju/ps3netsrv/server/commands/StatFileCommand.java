@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
+import com.jhonju.ps3netsrv.server.io.FileCustom;
+import com.jhonju.ps3netsrv.server.io.IFile;
 import com.jhonju.ps3netsrv.server.utils.Utils;
 
 public class StatFileCommand extends FileCommand {
@@ -23,7 +25,8 @@ public class StatFileCommand extends FileCommand {
         public final long dLastAccessTime;
         public final boolean eIsDirectory;
 
-        public StatFileResult(long fileSize, long modifiedTime, long creationTime, long lastAccessTime, boolean isDirectory) {
+        public StatFileResult(long fileSize, long modifiedTime, long creationTime, long lastAccessTime,
+                boolean isDirectory) {
             this.aFileSize = fileSize;
             this.bModifiedTime = modifiedTime;
             this.cCreationTime = creationTime;
@@ -54,15 +57,29 @@ public class StatFileCommand extends FileCommand {
     @Override
     public void executeTask() throws IOException, PS3NetSrvException {
         ctx.setFile(null);
-        File file = getFile();
-        if (file.exists()) {
+        IFile file = getFile();
+        if (file != null && file.exists()) {
             ctx.setFile(file);
             StatFileResult statResult;
             if (file.isDirectory()) {
-                statResult = new StatFileResult(EMPTY_SIZE, file.lastModified() / MILLISECONDS_IN_SECOND, file.lastModified() / MILLISECONDS_IN_SECOND, 0, true);
+                statResult = new StatFileResult(EMPTY_SIZE, file.lastModified() / MILLISECONDS_IN_SECOND,
+                        file.lastModified() / MILLISECONDS_IN_SECOND, 0, true);
             } else {
-                long[] fileStats = Utils.getFileStats(file);
-                statResult = new StatFileResult(file.length(), file.lastModified() / MILLISECONDS_IN_SECOND, fileStats[0] / MILLISECONDS_IN_SECOND, fileStats[1] / MILLISECONDS_IN_SECOND, false);
+                long creationTime = file.lastModified();
+                long lastAccessTime = file.lastModified();
+
+                // Try to get real file stats if possible
+                if (file instanceof FileCustom) {
+                    File realFile = ((FileCustom) file).getRealFile();
+                    if (realFile != null) {
+                        long[] fileStats = Utils.getFileStats(realFile);
+                        creationTime = fileStats[0];
+                        lastAccessTime = fileStats[1];
+                    }
+                }
+
+                statResult = new StatFileResult(file.length(), file.lastModified() / MILLISECONDS_IN_SECOND,
+                        creationTime / MILLISECONDS_IN_SECOND, lastAccessTime / MILLISECONDS_IN_SECOND, false);
             }
             send(statResult);
         } else {

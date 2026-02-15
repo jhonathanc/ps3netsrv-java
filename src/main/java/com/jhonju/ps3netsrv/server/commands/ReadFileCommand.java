@@ -4,11 +4,11 @@ import static com.jhonju.ps3netsrv.server.utils.Utils.INT_CAPACITY;
 
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
+import com.jhonju.ps3netsrv.server.io.IFile;
 import com.jhonju.ps3netsrv.server.utils.Utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
 public class ReadFileCommand extends AbstractCommand {
     protected int numBytes;
@@ -42,12 +42,17 @@ public class ReadFileCommand extends AbstractCommand {
     @Override
     public void executeTask() throws IOException, PS3NetSrvException {
         byte[] readFileResult = new byte[numBytes];
-        RandomAccessFile file = ctx.getReadOnlyFile();
+        IFile file = ctx.getFile();
+        if (file == null) {
+            send(ERROR_CODE_BYTEARRAY);
+            throw new PS3NetSrvException("Error reading file: no file opened.");
+        }
         try {
-            file.seek(offset);
-            int bytesRead = file.read(readFileResult);
-            if (bytesRead < EMPTY_SIZE) {
-                throw new PS3NetSrvException("Error reading file: EOF.");
+            int bytesRead = file.read(readFileResult, 0, numBytes, offset);
+            if (bytesRead < 0) {
+                // Return 0 bytes read for EOF instead of throwing, or as per ps3netsrv protocol
+                send(new ReadFileResult(0, new byte[0]));
+                return;
             }
             send(new ReadFileResult(bytesRead, readFileResult));
         } catch (IOException e) {

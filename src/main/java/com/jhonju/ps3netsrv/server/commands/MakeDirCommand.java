@@ -2,6 +2,7 @@ package com.jhonju.ps3netsrv.server.commands;
 
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
+import com.jhonju.ps3netsrv.server.io.IFile;
 
 import java.io.IOException;
 
@@ -17,6 +18,7 @@ public class MakeDirCommand extends FileCommand {
             send(ERROR_CODE_BYTEARRAY);
             throw new PS3NetSrvException("Failed to make dir: server is executing as read only");
         }
-        send(getFile().mkdir() ? SUCCESS_CODE_BYTEARRAY : ERROR_CODE_BYTEARRAY);
+        IFile file = getFile();
+        send(file != null && file.mkdir() ? SUCCESS_CODE_BYTEARRAY : ERROR_CODE_BYTEARRAY);
     }
 }

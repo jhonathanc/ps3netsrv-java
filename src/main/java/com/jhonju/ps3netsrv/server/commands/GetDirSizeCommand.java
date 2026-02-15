@@ -2,15 +2,14 @@ package com.jhonju.ps3netsrv.server.commands;
 
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
+import com.jhonju.ps3netsrv.server.io.IFile;
 import com.jhonju.ps3netsrv.server.utils.Utils;
 
-import java.io.File;
 import java.io.IOException;
 
 public class GetDirSizeCommand extends FileCommand {
 
-    public GetDirSizeCommand(Context ctx, short filePathLength)
-    {
+    public GetDirSizeCommand(Context ctx, short filePathLength) {
         super(ctx, filePathLength);
         ERROR_CODE_BYTEARRAY = Utils.longToBytesBE(ERROR_CODE);
     }
@@ -20,12 +19,15 @@ public class GetDirSizeCommand extends FileCommand {
         send(Utils.longToBytesBE(calculateFileSize(getFile())));
     }
 
-    private static long calculateFileSize(File file) {
+    private static long calculateFileSize(IFile file) throws IOException {
         long fileSize = EMPTY_SIZE;
+        if (file == null || !file.exists())
+            return ERROR_CODE;
+
         if (file.isDirectory()) {
-            File[] files = file.listFiles();
+            IFile[] files = file.listFiles();
             if (files != null) {
-                for (File subFile : files) {
+                for (IFile subFile : files) {
                     fileSize += calculateFileSize(subFile);
                 }
             }

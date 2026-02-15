@@ -1,11 +1,12 @@
 package com.jhonju.ps3netsrv.server.commands;
 
 import com.jhonju.ps3netsrv.server.Context;
+import com.jhonju.ps3netsrv.server.io.IFile;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.IOException;
 
 public class ReadCD2048Command extends AbstractCommand {
 
@@ -25,24 +26,24 @@ public class ReadCD2048Command extends AbstractCommand {
     public void executeTask() throws IOException, PS3NetSrvException {
         if (sectorCount > MAX_SECTORS) {
             throw new IllegalArgumentException("Too many sectors read!");
-            //TODO: VERIFICAR O QUE PODE SER DEVOLVIDO COMO RESPOSTA
         }
-        if (ctx.getFile() == null) {
+        IFile file = ctx.getFile();
+        if (file == null) {
             throw new IllegalArgumentException("File shouldn't be null");
-            //TODO: VERIFICAR O QUE PODE SER DEVOLVIDO COMO RESPOSTA
         }
-        send(readSectors(ctx.getReadOnlyFile(), startSector * ctx.getCdSectorSize().cdSectorSize, sectorCount));
+        send(readSectors(file, startSector * ctx.getCdSectorSize().cdSectorSize, sectorCount));
     }
 
-    private byte[] readSectors(RandomAccessFile file, long offset, int count) throws IOException {
+    private byte[] readSectors(IFile file, long offset, int count) throws IOException {
         final int SECTOR_SIZE = ctx.getCdSectorSize().cdSectorSize;
 
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream(count * MAX_RESULT_SIZE)) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream(count * MAX_RESULT_SIZE)) {
             for (int i = 0; i < count; i++) {
-                file.seek(offset + BYTES_TO_SKIP);
                 byte[] sectorRead = new byte[MAX_RESULT_SIZE];
-                int bytesLength = file.read(sectorRead);
-                out.write(sectorRead, 0, bytesLength);
+                int bytesLength = file.read(sectorRead, 0, MAX_RESULT_SIZE, offset + BYTES_TO_SKIP);
+                if (bytesLength > 0) {
+                    out.write(sectorRead, 0, bytesLength);
+                }
                 offset += SECTOR_SIZE;
             }
             return out.toByteArray();

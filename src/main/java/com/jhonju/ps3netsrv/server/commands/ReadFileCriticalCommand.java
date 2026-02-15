@@ -1,11 +1,9 @@
 package com.jhonju.ps3netsrv.server.commands;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.Arrays;
-
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
+import com.jhonju.ps3netsrv.server.io.IFile;
+import java.io.IOException;
 
 public class ReadFileCriticalCommand extends ReadFileCommand {
 
@@ -16,10 +14,12 @@ public class ReadFileCriticalCommand extends ReadFileCommand {
     @Override
     public void executeTask() throws IOException, PS3NetSrvException {
         byte[] result = new byte[numBytes];
-        RandomAccessFile file = ctx.getReadOnlyFile();
+        IFile file = ctx.getFile();
+        if (file == null) {
+            throw new PS3NetSrvException("Error reading file: no file opened.");
+        }
         try {
-            file.seek(offset);
-            if (file.read(result) < EMPTY_SIZE) {
+            if (file.read(result, 0, numBytes, offset) < 0) {
                 throw new PS3NetSrvException("Error reading file. EOF");
             }
         } catch (IOException e) {

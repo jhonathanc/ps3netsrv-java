@@ -5,9 +5,12 @@ plugins {
 group 'com.jhonju'
 version '1.0-SNAPSHOT'
 
+sourceCompatibility = 21
+targetCompatibility = 21
+
 jar {
-    archiveName = 'ps3netsrv.jar'
-    destinationDirectory.set(file("$buildDir/libs"))
+    archiveFileName = 'ps3netsrv.jar'
+    destinationDirectory = file("$buildDir/libs")
     manifest {
         attributes 'Main-Class': 'com.jhonju.ps3netsrv.PS3NetSrvMain'
     }

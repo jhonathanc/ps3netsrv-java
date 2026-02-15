@@ -4,12 +4,12 @@ import static com.jhonju.ps3netsrv.server.utils.Utils.longToBytesBE;
 
 import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.enums.CDSectorSize;
+import com.jhonju.ps3netsrv.server.io.IFile;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 
 public class OpenFileCommand extends FileCommand {
@@ -28,7 +28,8 @@ public class OpenFileCommand extends FileCommand {
         private long aFileSize = ERROR_CODE;
         private long bModifiedTime = ERROR_CODE;
 
-        public OpenFileResult() { }
+        public OpenFileResult() {
+        }
 
         public OpenFileResult(long fileSize, long modifiedTime) {
             this.aFileSize = fileSize;
@@ -46,8 +47,8 @@ public class OpenFileCommand extends FileCommand {
 
     @Override
     public void executeTask() throws IOException, PS3NetSrvException {
-        File file = getFile();
-        if (!file.exists()) {
+        IFile file = getFile();
+        if (file == null || !file.exists()) {
             ctx.setFile(null);
             send(new OpenFileResult());
             throw new PS3NetSrvException("Error: on OpenFileCommand - file not exists");
@@ -55,7 +56,7 @@ public class OpenFileCommand extends FileCommand {
         ctx.setFile(file);
 
         try {
-            determineCdSectorSize(ctx.getReadOnlyFile());
+            determineCdSectorSize(file);
         } catch (IOException e) {
             ctx.setFile(null);
             send(new OpenFileResult());
@@ -64,20 +65,22 @@ public class OpenFileCommand extends FileCommand {
         send(new OpenFileResult(file.length(), file.lastModified() / MILLISECONDS_IN_SECOND));
     }
 
-    private void determineCdSectorSize(RandomAccessFile file) throws IOException {
-        if (file.length() < CD_MINIMUM_SIZE || file.length() > CD_MAXIMUM_SIZE) {
+    private void determineCdSectorSize(com.jhonju.ps3netsrv.server.io.IFile file) throws IOException {
+        long fileLength = file.length();
+        if (fileLength < CD_MINIMUM_SIZE || fileLength > CD_MAXIMUM_SIZE) {
             ctx.setCdSectorSize(null);
             return;
         }
         for (CDSectorSize cdSec : CDSectorSize.values()) {
             long position = (cdSec.cdSectorSize << 4) + BYTES_TO_SKIP;
             byte[] buffer = new byte[20];
-            file.seek(position);
-            file.read(buffer);
-            String strBuffer = new String(buffer, StandardCharsets.US_ASCII);
-            if (strBuffer.contains(PLAYSTATION_IDENTIFIER) || strBuffer.contains(CD001_IDENTIFIER)) {
-                ctx.setCdSectorSize(cdSec);
-                break;
+            int readCount = file.read(buffer, 0, buffer.length, position);
+            if (readCount > 0) {
+                String strBuffer = new String(buffer, 0, readCount, StandardCharsets.US_ASCII);
+                if (strBuffer.contains(PLAYSTATION_IDENTIFIER) || strBuffer.contains(CD001_IDENTIFIER)) {
+                    ctx.setCdSectorSize(cdSec);
+                    break;
+                }
             }
         }
     }

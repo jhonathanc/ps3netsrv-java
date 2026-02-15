@@ -4,7 +4,6 @@ import com.jhonju.ps3netsrv.server.Context;
 import com.jhonju.ps3netsrv.server.exceptions.PS3NetSrvException;
 import com.jhonju.ps3netsrv.server.utils.Utils;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -24,14 +23,15 @@ public class WriteFileCommand extends AbstractCommand {
             throw new PS3NetSrvException("Failed to write file: server is executing as read only");
         }
 
-        if (ctx.getReadOnlyFile() == null) {
+        if (ctx.getWriteOnlyFile() == null) {
             send(ERROR_CODE_BYTEARRAY);
             throw new PS3NetSrvException("ERROR: file is null");
         }
 
         if (numBytes > BUFFER_SIZE) {
             send(ERROR_CODE_BYTEARRAY);
-            throw new PS3NetSrvException(String.format("ERROR: data to write (%d) is larger than buffer size (%d)", numBytes, BUFFER_SIZE));
+            throw new PS3NetSrvException(
+                    String.format("ERROR: data to write (%d) is larger than buffer size (%d)", numBytes, BUFFER_SIZE));
         }
 
         ByteBuffer buffer = Utils.readCommandData(ctx.getInputStream(), numBytes);
@@ -39,16 +39,15 @@ public class WriteFileCommand extends AbstractCommand {
             send(ERROR_CODE_BYTEARRAY);
             throw new PS3NetSrvException("ERROR: on write file - content is null");
         }
-        try (FileOutputStream fos = new FileOutputStream(ctx.getWriteOnlyFile())) {
-            byte[] content;
-            try {
-                content = buffer.array();
-                fos.write(content);
-            } catch (IOException ex) {
-                send(ERROR_CODE_BYTEARRAY);
-                throw new PS3NetSrvException("ERROR: writing file " + ex.getMessage());
-            }
+
+        try {
+            byte[] content = new byte[numBytes];
+            buffer.get(content);
+            ctx.getWriteOnlyFile().write(content);
             send(Utils.intToBytesBE(content.length));
+        } catch (IOException ex) {
+            send(ERROR_CODE_BYTEARRAY);
+            throw new PS3NetSrvException("ERROR: writing file " + ex.getMessage());
         }
     }
 }
