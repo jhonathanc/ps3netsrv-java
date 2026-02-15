@@ -19,7 +19,8 @@ public class PS3NetSrvTask implements Runnable {
     private ServerSocket serverSocket;
     private boolean isRunning = true;
 
-    public PS3NetSrvTask(int port, String folderPath, int maxConnections, boolean readOnly, Set<String> filterAddresses, EListType listType, Thread.UncaughtExceptionHandler exceptionHandler) {
+    public PS3NetSrvTask(int port, String folderPath, int maxConnections, boolean readOnly, Set<String> filterAddresses,
+            EListType listType, Thread.UncaughtExceptionHandler exceptionHandler) {
         this.port = port;
         this.folderPath = folderPath;
         this.maxConnections = maxConnections;
@@ -48,18 +49,20 @@ public class PS3NetSrvTask implements Runnable {
                 Socket clientSocket = serverSocket.accept();
                 String hostAddress = clientSocket.getInetAddress().getHostAddress();
                 if (!allowIncomingConnection(hostAddress)) {
-                    exceptionHandler.uncaughtException(null, new PS3NetSrvException(String.format("Blocked connection: %s", hostAddress)));
+                    exceptionHandler.uncaughtException(Thread.currentThread(),
+                            new PS3NetSrvException(String.format("Blocked connection: %s", hostAddress)));
                     try {
                         clientSocket.close();
                     } catch (IOException e) {
-                        exceptionHandler.uncaughtException(null, e);
+                        exceptionHandler.uncaughtException(Thread.currentThread(), e);
                     }
                     continue;
                 }
-                new ContextHandler(new Context(clientSocket, folderPath, readOnly), maxConnections, exceptionHandler).start();
+                new ContextHandler(new Context(clientSocket, folderPath, readOnly), maxConnections, exceptionHandler)
+                        .start();
             }
         } catch (IOException e) {
-            exceptionHandler.uncaughtException(null, e);
+            exceptionHandler.uncaughtException(Thread.currentThread(), e);
         } finally {
             shutdown();
         }
@@ -82,7 +85,8 @@ public class PS3NetSrvTask implements Runnable {
     public void shutdown() {
         isRunning = false;
         try {
-            if (serverSocket != null) serverSocket.close();
+            if (serverSocket != null)
+                serverSocket.close();
         } catch (IOException e) {
             System.err.println(e.getMessage());
         } finally {

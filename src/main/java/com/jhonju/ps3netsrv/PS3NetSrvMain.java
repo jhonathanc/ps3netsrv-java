@@ -46,7 +46,9 @@ public class PS3NetSrvMain {
         System.out.println("Server is running at " + port);
         System.out.println("Server is running at " + folderPath);
 
-        PS3NetSrvTask server = new PS3NetSrvTask(port, folderPath, maxConnections, readOnly, filterAddresses, listType, (thread, throwable) -> System.err.println(thread.getId() + " " + throwable.getMessage()));
+        PS3NetSrvTask server = new PS3NetSrvTask(port, folderPath, maxConnections, readOnly, filterAddresses, listType,
+                (thread, throwable) -> System.err
+                        .println((thread != null ? thread.getId() : "Unknown") + " " + throwable.getMessage()));
 
         server.run();
         System.out.println("Server end");
